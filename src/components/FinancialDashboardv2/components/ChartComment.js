@@ -1,6 +1,6 @@
 // src/components/FinancialDashboardv2/components/ChartComment.js
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../../supabaseClient';
 
 export const ChartComment = ({ chartId }) => {
@@ -9,21 +9,17 @@ export const ChartComment = ({ chartId }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
 
-  // Load existing comment on mount
-  useEffect(() => {
-    loadComment();
-  }, [chartId]);
-
-  const loadComment = async () => {
+  // Load existing comment - wrapped in useCallback for useEffect dependency
+  const loadComment = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error: fetchError } = await supabase
         .from('chart_comments')
         .select('comment')
         .eq('chart_id', chartId)
         .single();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 is "not found" error
-        throw error;
+      if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 is "not found" error
+        throw fetchError;
       }
 
       if (data) {
@@ -33,14 +29,19 @@ export const ChartComment = ({ chartId }) => {
       console.error('Error loading comment:', err);
       setError('Failed to load comment');
     }
-  };
+  }, [chartId]);
+
+  // Load existing comment on mount and when chartId changes
+  useEffect(() => {
+    loadComment();
+  }, [loadComment]);
 
   const saveComment = async () => {
     setIsSaving(true);
     setError(null);
 
     try {
-      const { error } = await supabase
+      const { error: saveError } = await supabase
         .from('chart_comments')
         .upsert(
           { 
@@ -52,7 +53,7 @@ export const ChartComment = ({ chartId }) => {
           }
         );
 
-      if (error) throw error;
+      if (saveError) throw saveError;
 
       setIsEditing(false);
     } catch (err) {

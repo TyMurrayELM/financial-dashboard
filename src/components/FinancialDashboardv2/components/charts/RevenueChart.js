@@ -1,7 +1,7 @@
-// src/components/FinancialDashboard/components/charts/RevenueChart.js
+// src/components/FinancialDashboardv2/components/charts/RevenueChart.js
 
 import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Area, ComposedChart } from 'recharts';
+import { Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Area, ComposedChart } from 'recharts';
 import { formatCurrency, formatPercent } from '../../utils/formatting';
 
 export const RevenueChart = ({ data, rollingAverages = {}, showDollarValues = false }) => {
@@ -84,26 +84,22 @@ export const RevenueChart = ({ data, rollingAverages = {}, showDollarValues = fa
           <YAxis 
             yAxisId="right" 
             orientation="right" 
-            tickFormatter={(value) => formatCurrency(value)}
+            tickFormatter={(value) => formatCurrency(value)} 
             width={80}
           />
         ) : (
           <YAxis 
             yAxisId="right" 
             orientation="right" 
-            tickFormatter={(value) => `${value}%`}
-            domain={['auto', 'auto']}
+            tickFormatter={(value) => `${value}%`} 
           />
         )}
         
         <Tooltip 
           formatter={(value, name) => {
             if (value === null || value === undefined) return 'No data';
-            // Clean up the name for display (remove Fill suffixes)
-            const cleanName = name.replace(/PositiveFill|NegativeFill|Fill/g, '').trim();
-            if (cleanName.includes('Revenue') || (showDollarValues && (cleanName.includes('Gross') || cleanName.includes('Net Income')))) {
-              return formatCurrency(value);
-            }
+            if (name.includes('Revenue')) return formatCurrency(value);
+            if (showDollarValues) return formatCurrency(value);
             return formatPercent(value);
           }}
           content={({ active, payload, label }) => {
@@ -118,17 +114,15 @@ export const RevenueChart = ({ data, rollingAverages = {}, showDollarValues = fa
                 );
               }
               
-              // Filter out fill entries from tooltip
-              const displayPayload = payload.filter(entry => !entry.dataKey.includes('Fill'));
-              
               return (
                 <div className="bg-white p-3 border rounded shadow-lg">
                   <p className="font-medium text-sm mb-2">{label}</p>
-                  {displayPayload.map((entry, index) => (
+                  {payload.map((entry, index) => (
                     <div key={index} className="flex justify-between items-center text-xs">
                       <span style={{ color: entry.color }}>{entry.name}:</span>
                       <span className="ml-4 font-medium">
-                        {entry.value === null || entry.value === undefined ? 'No data' :
+                        {entry.value === null || entry.value === undefined ? 
+                          'No data' :
                           (entry.name.includes('Revenue') || 
                            (showDollarValues && (entry.name.includes('Gross') || entry.name.includes('Net Income'))))
                             ? formatCurrency(entry.value)
@@ -171,7 +165,7 @@ export const RevenueChart = ({ data, rollingAverages = {}, showDollarValues = fa
                   stroke="none"
                   connectNulls={false}
                   isAnimationActive={false}
-                  legendType="none"  // Hide from legend
+                  legendType="none"
                 />
                 <Area
                   yAxisId="right"
@@ -181,7 +175,7 @@ export const RevenueChart = ({ data, rollingAverages = {}, showDollarValues = fa
                   stroke="none"
                   connectNulls={false}
                   isAnimationActive={false}
-                  legendType="none"  // Hide from legend
+                  legendType="none"
                 />
               </>
             )}
@@ -238,7 +232,7 @@ export const RevenueChart = ({ data, rollingAverages = {}, showDollarValues = fa
                   stroke="none"
                   connectNulls={false}
                   isAnimationActive={false}
-                  legendType="none"  // Hide from legend
+                  legendType="none"
                 />
                 <Area
                   yAxisId="right"
@@ -248,7 +242,7 @@ export const RevenueChart = ({ data, rollingAverages = {}, showDollarValues = fa
                   stroke="none"
                   connectNulls={false}
                   isAnimationActive={false}
-                  legendType="none"  // Hide from legend
+                  legendType="none"
                 />
               </>
             )}
@@ -300,7 +294,7 @@ export const RevenueChart = ({ data, rollingAverages = {}, showDollarValues = fa
                   stroke="none"
                   connectNulls={false}
                   isAnimationActive={false}
-                  legendType="none"  // Hide from legend
+                  legendType="none"
                 />
                 <Area
                   yAxisId="right"
@@ -310,7 +304,7 @@ export const RevenueChart = ({ data, rollingAverages = {}, showDollarValues = fa
                   stroke="none"
                   connectNulls={false}
                   isAnimationActive={false}
-                  legendType="none"  // Hide from legend
+                  legendType="none"
                 />
               </>
             )}
@@ -362,7 +356,7 @@ export const RevenueChart = ({ data, rollingAverages = {}, showDollarValues = fa
                   stroke="none"
                   connectNulls={false}
                   isAnimationActive={false}
-                  legendType="none"  // Hide from legend
+                  legendType="none"
                 />
                 <Area
                   yAxisId="right"
@@ -372,7 +366,7 @@ export const RevenueChart = ({ data, rollingAverages = {}, showDollarValues = fa
                   stroke="none"
                   connectNulls={false}
                   isAnimationActive={false}
-                  legendType="none"  // Hide from legend
+                  legendType="none"
                 />
               </>
             )}

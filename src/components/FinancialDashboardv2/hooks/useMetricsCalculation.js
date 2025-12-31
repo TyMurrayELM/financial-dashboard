@@ -17,15 +17,6 @@ export const useMetricsCalculation = (
   indirectCostsRollingAverages,
   revenuePerEmployeeRollingAverages
 ) => {
-  // Helper function to check if a month has any data
-  const monthHasData = (monthData) => {
-    // Check if any key financial metric has a non-zero value
-    return monthData.revenue > 0 || 
-           monthData.cogs > 0 || 
-           monthData.netIncome !== 0 || // netIncome can be negative
-           monthData.totalEmployees > 0;
-  };
-
   // Calculate metrics with department breakdown
   const calculateMetrics = useMemo(() => {
     if (!data) return [];
@@ -77,7 +68,6 @@ export const useMetricsCalculation = (
       
       // Initialize aggregation variables
       let maintRevenue = 0;
-      let maintOnSiteRevenue = 0;
       let extraSalesRevenue = 0;
       let totalEmployees = 0;
       let totalIndirect = 0;
@@ -86,8 +76,6 @@ export const useMetricsCalculation = (
       let totalVehicleRepair = 0;
       let totalActiveVehicles = 0;
       let totalWages = 0;
-      let totalBenefits = 0;
-      let totalMeals = 0;
       let totalMaintPlan = 0;
       let totalMaintForecast = 0;
       let maintDirectEmployees = 0;
@@ -275,8 +263,6 @@ export const useMetricsCalculation = (
             totalVehicleRepair += d.totalVehicleRepairMaint;
             totalActiveVehicles += d.activeVehicles;
             totalWages += d.wages;
-            totalBenefits += d.benefits;
-            totalMeals += d.employeeMealsAppreciation;
             
             // Track department wages
             if (!monthData.departmentWages[dept]) {

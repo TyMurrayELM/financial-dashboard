@@ -1,4 +1,4 @@
-// src/components/FinancialDashboard/hooks/useFinancialData.js
+// src/components/FinancialDashboardv2/hooks/useFinancialData.js
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../../supabaseClient';
@@ -16,11 +16,12 @@ export const useFinancialData = () => {
   // Check Supabase connection
   const checkConnection = async () => {
     try {
-      const { data, error } = await supabase
+      // Using underscore prefix to indicate intentionally unused variable
+      const { error } = await supabase
         .from('financial_data')
         .select('count', { count: 'exact', head: true });
       setIsConnected(!error);
-    } catch (error) {
+    } catch (err) {
       setIsConnected(false);
     }
   };
@@ -69,8 +70,8 @@ export const useFinancialData = () => {
       
       setData(newData);
       setIsConnected(true);
-    } catch (error) {
-      console.error('Error loading data:', error);
+    } catch (err) {
+      console.error('Error loading data:', err);
       setIsConnected(false);
       // Even if loading fails, use the initialized empty data
       setData(getInitialData());
@@ -116,9 +117,9 @@ export const useFinancialData = () => {
       
       setIsConnected(true);
       setLastSaved(new Date());
-    } catch (error) {
-      console.error('Error saving data:', error);
-      alert(`Failed to save data: ${error.message || 'Unknown error'}`);
+    } catch (err) {
+      console.error('Error saving data:', err);
+      alert(`Failed to save data: ${err.message || 'Unknown error'}`);
       setIsConnected(false);
     } finally {
       setIsSaving(false);
