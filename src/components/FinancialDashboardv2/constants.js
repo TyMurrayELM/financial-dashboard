@@ -66,7 +66,7 @@ export const expenseCategoryFields = {
 
 export const generateMonths = () => {
   const months = [];
-  for (let year = 2023; year <= 2027; year++) {
+  for (let year = 2023; year <= 2026; year++) {
     for (let month = 1; month <= 12; month++) {
       months.push(`${year}-${month.toString().padStart(2, '0')}`);
     }
