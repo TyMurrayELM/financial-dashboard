@@ -35,7 +35,7 @@ const FinancialDashboard = () => {
   // State for filters and UI
   const [startMonth, setStartMonth] = useState('2025-01');
   const [endMonth, setEndMonth] = useState('2025-12');
-  const [selectedRegion, setSelectedRegion] = useState('All');
+  const [selectedRegion, setSelectedRegion] = useState('Company');
   const [selectedDepartment, setSelectedDepartment] = useState('All');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [expandedChart, setExpandedChart] = useState(null);
