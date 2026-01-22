@@ -135,7 +135,7 @@ export const SankeyChart = ({
     return (
       <div className="bg-white rounded-lg shadow-sm border p-6">
         <h3 className="text-lg font-semibold mb-4">Revenue Flow Sankey Chart</h3>
-        <div className="flex items-center justify-center h-[500px] bg-gray-50 rounded-lg">
+        <div className="flex items-center justify-center h-[450px] bg-gray-50 rounded-lg">
           <p className="text-gray-500">No revenue data available for the selected period</p>
         </div>
       </div>
@@ -256,7 +256,7 @@ export const SankeyChart = ({
       size: 12,
       family: 'Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif'
     },
-    height: 750,
+    height: 675,
     margin: { l: 120, r: 180, t: 60, b: 60 },
     paper_bgcolor: '#ffffff',
     plot_bgcolor: '#ffffff',
@@ -337,7 +337,7 @@ export const SankeyChart = ({
         data={[trace]}
         layout={layout}
         config={config}
-        style={{ width: '100%', height: '750px' }}
+        style={{ width: '100%', height: '675px' }}
       />
       
       <div className="mt-6 grid grid-cols-3 gap-4">
