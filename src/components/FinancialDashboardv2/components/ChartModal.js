@@ -1,4 +1,4 @@
-// src/components/FinancialDashboard/components/ChartModal.js
+// src/components/FinancialDashboardv2/components/ChartModal.js
 
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
@@ -11,6 +11,7 @@ export const ChartModal = ({ chart, onClose }) => {
   const [localShowDollarValues, setLocalShowDollarValues] = useState(chart.showDollarValues || false);
   const [localEmployeeTypeValues, setLocalEmployeeTypeValues] = useState(chart.employeeTypeValues || { all: true, direct: false, indirect: false });
   const [localShowMaintenanceRevenue, setLocalShowMaintenanceRevenue] = useState(chart.showMaintenanceRevenue || false);
+  const [localHoveredMonth, setLocalHoveredMonth] = useState(null);
   
   // Update local state if props change
   useEffect(() => {
@@ -380,11 +381,89 @@ export const ChartModal = ({ chart, onClose }) => {
                   ...(chart.showMultipleRollingAverages && { rollingAverages: localRollingAverages }),
                   ...(chart.showDollarToggle && { showDollarValues: localShowDollarValues }),
                   ...(chart.showEmployeeTypeSelection && { visibleLines: localEmployeeTypeValues }),
-                  ...(chart.showMaintenanceRevenueToggle && { showMaintenanceRevenue: localShowMaintenanceRevenue })
+                  ...(chart.showMaintenanceRevenueToggle && { showMaintenanceRevenue: localShowMaintenanceRevenue }),
+                  // Pass the local hover handler for client retention
+                  ...(chart.chartType === 'ClientRetentionChart' && { onHoverMonth: setLocalHoveredMonth })
                 }) : 
                 chart.content
               }
             </div>
+            
+            {/* Custom content - Properties Lost display for Client Retention */}
+            {chart.chartType === 'ClientRetentionChart' && chart.chartProps?.data && localHoveredMonth && (() => {
+              const metric = chart.chartProps.data.find(m => m.month === localHoveredMonth);
+              if (!metric || !metric.propertiesLostList || !metric.propertiesLostList.trim()) {
+                return null;
+              }
+              
+              const BRANCH_COLORS = {
+                'Company': '#6b7280',
+                'Las Vegas': '#fbbf24',
+                'Phx - SW': '#3b82f6',
+                'Phx - SE': '#ef4444',
+                'Phx - N': '#10b981'
+              };
+              
+              // Parse properties by branch - handle multi-line entries
+              const propertiesByBranch = {};
+              let currentBranch = null;
+              
+              metric.propertiesLostList.split('\n').forEach(line => {
+                const branchMatch = line.match(/^(Company|Las Vegas|Phx - SW|Phx - SE|Phx - N):\s*(.*)$/);
+                if (branchMatch) {
+                  currentBranch = branchMatch[1];
+                  const properties = branchMatch[2].trim();
+                  if (properties) {
+                    if (!propertiesByBranch[currentBranch]) {
+                      propertiesByBranch[currentBranch] = [];
+                    }
+                    propertiesByBranch[currentBranch].push(properties);
+                  }
+                } else if (line.trim()) {
+                  const branch = currentBranch || 'Other';
+                  if (!propertiesByBranch[branch]) {
+                    propertiesByBranch[branch] = [];
+                  }
+                  propertiesByBranch[branch].push(line.trim());
+                }
+              });
+              
+              const branchEntries = Object.entries(propertiesByBranch);
+              if (branchEntries.length === 0) return null;
+              
+              return (
+                <div style={{
+                  marginTop: '-160px',
+                  padding: '16px',
+                  backgroundColor: '#f9fafb',
+                  borderRadius: '8px',
+                  border: '1px solid #e5e7eb',
+                  position: 'relative',
+                  zIndex: 10
+                }}>
+                  <p style={{
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: '#374151',
+                    marginBottom: '8px'
+                  }}>
+                    Properties Lost - {localHoveredMonth}:
+                  </p>
+                  <div style={{ fontSize: '14px' }}>
+                    {branchEntries.map(([branch, properties], idx) => {
+                      const color = BRANCH_COLORS[branch] || '#6b7280';
+                      return (
+                        <div key={idx} style={{ marginBottom: '4px' }}>
+                          <span style={{ color, fontWeight: 600 }}>{branch}: </span>
+                          <span style={{ color }}>{properties.join(', ')}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+            
             {chart.description && (
               <div style={{
                 marginTop: '32px',

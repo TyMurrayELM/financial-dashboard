@@ -1,7 +1,7 @@
-// src/components/FinancialDashboard/components/charts/ClientRetentionChart.js
+// src/components/FinancialDashboardv2/components/charts/ClientRetentionChart.js
 
 import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { formatCurrency } from '../../utils/formatting';
 
 // Define colors for each branch
@@ -14,11 +14,17 @@ const BRANCH_COLORS = {
   'Phx - N': '#10b981'     // Green
 };
 
-export const ClientRetentionChart = ({ data, showDollarValues = false, selectedBranches = [] }) => {
-  // Custom tooltip to show branch breakdown
+export const ClientRetentionChart = ({ data, showDollarValues = false, selectedBranches = [], onHoverMonth }) => {
+  // Custom tooltip to show branch breakdown and properties lost
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       const metric = data.find(m => m.month === label);
+      
+      // Call onHoverMonth when tooltip is active
+      if (onHoverMonth) {
+        onHoverMonth(label);
+      }
+      
       if (!metric) {
         return (
           <div className="bg-white p-3 border rounded shadow-lg">
@@ -28,8 +34,47 @@ export const ClientRetentionChart = ({ data, showDollarValues = false, selectedB
         );
       }
       
+      // Parse properties lost list to extract branch and properties
+      const parsePropertiesLostByBranch = (propertiesLostList) => {
+        if (!propertiesLostList || propertiesLostList.trim() === '') return [];
+        
+        const propertiesByBranch = {};
+        let currentBranch = null;
+        const lines = propertiesLostList.split('\n');
+        
+        lines.forEach(line => {
+          // Check if line starts with a branch name followed by colon
+          const branchMatch = line.match(/^(Company|Las Vegas|Phx - SW|Phx - SE|Phx - N):\s*(.*)$/);
+          if (branchMatch) {
+            currentBranch = branchMatch[1];
+            const properties = branchMatch[2].trim();
+            if (properties) {
+              if (!propertiesByBranch[currentBranch]) {
+                propertiesByBranch[currentBranch] = [];
+              }
+              propertiesByBranch[currentBranch].push(properties);
+            }
+          } else if (line.trim()) {
+            // Line without branch prefix - add to current branch or 'Other'
+            const branch = currentBranch || 'Other';
+            if (!propertiesByBranch[branch]) {
+              propertiesByBranch[branch] = [];
+            }
+            propertiesByBranch[branch].push(line.trim());
+          }
+        });
+        
+        // Convert to array format for rendering
+        return Object.entries(propertiesByBranch).map(([branch, properties]) => ({
+          branch,
+          properties
+        }));
+      };
+      
+      const propertiesByBranch = parsePropertiesLostByBranch(metric.propertiesLostList);
+      
       return (
-        <div className="bg-white p-3 border rounded shadow-lg">
+        <div className="bg-white p-3 border rounded shadow-lg max-w-md">
           <p className="font-medium text-sm mb-2">{label}</p>
           <div className="space-y-1">
             {/* Show data for each line that's in the payload */}
@@ -67,9 +112,34 @@ export const ClientRetentionChart = ({ data, showDollarValues = false, selectedB
                 )}
               </div>
             )}
+            
+            {/* Properties Lost List - colored by branch */}
+            {propertiesByBranch.length > 0 && (
+              <div className="border-t mt-2 pt-2">
+                <p className="text-xs font-medium text-gray-700 mb-1">Properties Lost:</p>
+                <div className="text-xs max-h-32 overflow-y-auto space-y-1">
+                  {propertiesByBranch.map((item, idx) => {
+                    const branchColor = BRANCH_COLORS[item.branch] || '#6b7280';
+                    return (
+                      <div key={idx}>
+                        <span style={{ color: branchColor, fontWeight: 600 }}>{item.branch}: </span>
+                        <span style={{ color: branchColor }}>
+                          {item.properties.join(', ')}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       );
+    } else {
+      // Clear hovered month when tooltip is not active
+      if (onHoverMonth) {
+        onHoverMonth(null);
+      }
     }
     return null;
   };
@@ -89,6 +159,16 @@ export const ClientRetentionChart = ({ data, showDollarValues = false, selectedB
         />
         <Tooltip content={<CustomTooltip />} />
         <Legend />
+        
+        {/* 90% Target Line for percentage view */}
+        {!showDollarValues && (
+          <ReferenceLine 
+            y={90} 
+            stroke="#ef4444" 
+            strokeDasharray="5 5" 
+            label={{ value: '90% Target', position: 'right', fontSize: 10, fill: '#ef4444' }}
+          />
+        )}
         
         {/* Render a line for each selected branch */}
         {branchesToShow.map(branch => {
@@ -112,24 +192,13 @@ export const ClientRetentionChart = ({ data, showDollarValues = false, selectedB
               dataKey={dataKey}
               stroke={BRANCH_COLORS[branch] || '#6b7280'} 
               name={name}
-              strokeWidth={branch === 'All' ? 3 : 2} // Make 'All' line slightly thicker
+              strokeWidth={branch === 'All' ? 2 : 1.5}
+              dot={{ r: 3 }}
+              activeDot={{ r: 5 }}
               connectNulls={false}
-              dot={false}
             />
           );
         })}
-        
-        {/* Target line (90%) - only show in percentage view */}
-        {!showDollarValues && (
-          <Line 
-            dataKey={() => 90} 
-            stroke="#9ca3af" 
-            strokeWidth={2} 
-            strokeDasharray="5 5"
-            name="Target (90%)" 
-            dot={false}
-          />
-        )}
       </LineChart>
     </ResponsiveContainer>
   );

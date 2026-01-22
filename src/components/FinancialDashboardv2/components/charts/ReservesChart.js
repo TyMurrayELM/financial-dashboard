@@ -1,7 +1,7 @@
-// src/components/FinancialDashboard/components/charts/ReservesChart.js
+// src/components/FinancialDashboardv2/components/charts/ReservesChart.js
 
 import React from 'react';
-import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { formatCurrency } from '../../utils/formatting';
 
 export const ReservesChart = ({ data }) => {
@@ -48,7 +48,9 @@ export const ReservesChart = ({ data }) => {
                     </div>
                     <div className="border-t mt-2 pt-2 flex justify-between text-xs font-medium">
                       <span>Total Liquid Reserves:</span>
-                      <span className="text-green-600">{formatCurrency(metric.liquidReserves)}</span>
+                      <span className={metric.liquidReserves >= 750000 ? 'text-green-600' : 'text-red-600'}>
+                        {formatCurrency(metric.liquidReserves)}
+                      </span>
                     </div>
                     <div className="flex justify-between text-xs">
                       <span>Monthly Expenses:</span>
@@ -58,6 +60,12 @@ export const ReservesChart = ({ data }) => {
                       <span>Months of Coverage:</span>
                       <span className={metric.monthsOfExpensesCoverage >= 3 ? 'text-green-600' : metric.monthsOfExpensesCoverage >= 1 ? 'text-yellow-600' : 'text-red-600'}>
                         {metric.monthsOfExpensesCoverage.toFixed(1)} months
+                      </span>
+                    </div>
+                    <div className="border-t mt-2 pt-2 flex justify-between text-xs">
+                      <span>Liquidity Covenant ($750K):</span>
+                      <span className={metric.liquidReserves >= 750000 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                        {metric.liquidReserves >= 750000 ? '✓ Met' : '✗ Below'}
                       </span>
                     </div>
                   </div>
@@ -88,6 +96,20 @@ export const ReservesChart = ({ data }) => {
           strokeDasharray="5 5" 
           name="Target (1 month)" 
           dot={false}
+        />
+        {/* $750K Liquidity Covenant Line */}
+        <ReferenceLine 
+          yAxisId="left" 
+          y={750000} 
+          stroke="#000000" 
+          strokeWidth={2} 
+          strokeDasharray="5 5"
+          label={{ 
+            value: '$750K Covenant', 
+            position: 'insideTopRight',
+            fill: '#000000',
+            fontSize: 11
+          }}
         />
       </ComposedChart>
     </ResponsiveContainer>

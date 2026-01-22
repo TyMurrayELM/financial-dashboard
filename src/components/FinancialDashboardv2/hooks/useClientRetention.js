@@ -1,8 +1,17 @@
-// src/components/FinancialDashboard/hooks/useClientRetention.js
+// src/components/FinancialDashboardv2/hooks/useClientRetention.js
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../../supabaseClient';
-import { allMonths, clientRetentionBranches, defaultClientRetentionData } from '../constants';
+import { allMonths, clientRetentionBranches } from '../constants';
+
+// Default data for each month
+const defaultClientRetentionData = {
+  retentionPercent: 90,
+  retentionDollars: 0,
+  lostClients: 0,
+  totalClients: 0,
+  propertiesLostList: ''
+};
 
 export const useClientRetention = () => {
   const [clientRetentionData, setClientRetentionData] = useState(() => {
@@ -36,7 +45,7 @@ export const useClientRetention = () => {
         .from('client_retention_data')
         .select('*');
       
-      if (error && error.code !== 'PGRST116') throw error; // Ignore table not found error
+      if (error && error.code !== 'PGRST116') throw error;
       
       // Start with initialized data
       const newRetentionData = {};
@@ -55,15 +64,19 @@ export const useClientRetention = () => {
         });
       });
       
-      // Populate from database if data exists
+      // Populate with data from database
       if (dbData && dbData.length > 0) {
         dbData.forEach(row => {
-          if (newRetentionData[row.branch] && newRetentionData[row.branch][row.month]) {
-            newRetentionData[row.branch][row.month] = {
+          const branch = row.branch;
+          const month = row.month;
+          
+          if (newRetentionData[branch] && newRetentionData[branch][month]) {
+            newRetentionData[branch][month] = {
               retentionPercent: parseFloat(row.retention_percent) || 90,
               retentionDollars: parseFloat(row.retention_dollars) || 0,
-              lostClients: parseInt(row.lost_properties) || 0,  // From lost_properties column
-              totalClients: parseInt(row.total_properties) || 0  // From total_properties column
+              lostClients: parseInt(row.lost_properties) || 0,
+              totalClients: parseInt(row.total_properties) || 0,
+              propertiesLostList: row.properties_lost_list || ''
             };
           }
         });
@@ -72,24 +85,7 @@ export const useClientRetention = () => {
       setClientRetentionData(newRetentionData);
     } catch (error) {
       console.error('Error loading client retention data:', error);
-      // Initialize with default data on error
-      const newRetentionData = {};
-      
-      // Initialize Company level
-      newRetentionData['Company'] = {};
-      allMonths.forEach(month => {
-        newRetentionData['Company'][month] = { ...defaultClientRetentionData };
-      });
-      
-      // Initialize each branch
-      clientRetentionBranches.forEach(branch => {
-        newRetentionData[branch] = {};
-        allMonths.forEach(month => {
-          newRetentionData[branch][month] = { ...defaultClientRetentionData };
-        });
-      });
-      
-      setClientRetentionData(newRetentionData);
+      // Keep initialized data on error
     }
   };
 
@@ -104,8 +100,9 @@ export const useClientRetention = () => {
           month,
           retention_percent: data.retentionPercent,
           retention_dollars: data.retentionDollars,
-          lost_properties: data.lostClients,      // Maps to lost_properties column
-          total_properties: data.totalClients,    // Maps to total_properties column
+          lost_properties: data.lostClients,
+          total_properties: data.totalClients,
+          properties_lost_list: data.propertiesLostList || '',
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'branch,month'
@@ -117,7 +114,8 @@ export const useClientRetention = () => {
       }
     } catch (error) {
       console.error('Error saving client retention data:', error);
-      alert(`Failed to save client retention data: ${error.message || 'Unknown error'}`);
+      // Don't alert for now since column might not exist yet
+      console.warn('Note: properties_lost_list column may need to be added to Supabase');
     } finally {
       setIsSaving(false);
     }
@@ -141,6 +139,9 @@ export const useClientRetention = () => {
         newData[branch][month][field] = parseFloat(value) || 0;
       } else if (field === 'lostClients' || field === 'totalClients') {
         newData[branch][month][field] = parseInt(value) || 0;
+      } else if (field === 'propertiesLostList') {
+        // Store as string
+        newData[branch][month][field] = value;
       } else {
         newData[branch][month][field] = value;
       }
@@ -167,7 +168,8 @@ export const useClientRetention = () => {
     filteredMonths.forEach(month => {
       let monthData = {
         month,
-        hasData: false
+        hasData: false,
+        propertiesLostList: '' // Will aggregate properties lost from selected branches
       };
       
       // If "All" is selected or no branches selected, aggregate all branches INCLUDING Company
@@ -178,10 +180,10 @@ export const useClientRetention = () => {
         let totalTotalClients = 0;
         let branchCount = 0;
         let hasAnyData = false;
+        let allPropertiesLost = [];
         
         // Include Company data
         const companyData = clientRetentionData['Company']?.[month];
-        // More strict check - only consider it has data if there's actual retention dollars or total clients
         if (companyData && (companyData.retentionDollars > 0 || companyData.totalClients > 0)) {
           totalRetentionPercent += companyData.retentionPercent;
           totalRetentionDollars += companyData.retentionDollars;
@@ -189,12 +191,14 @@ export const useClientRetention = () => {
           totalTotalClients += companyData.totalClients;
           branchCount++;
           hasAnyData = true;
+          if (companyData.propertiesLostList) {
+            allPropertiesLost.push(`Company: ${companyData.propertiesLostList}`);
+          }
         }
         
         // Include all branch data
         clientRetentionBranches.forEach(branch => {
           const data = clientRetentionData[branch]?.[month];
-          // More strict check - only consider it has data if there's actual retention dollars or total clients
           if (data && (data.retentionDollars > 0 || data.totalClients > 0)) {
             totalRetentionPercent += data.retentionPercent;
             totalRetentionDollars += data.retentionDollars;
@@ -202,6 +206,9 @@ export const useClientRetention = () => {
             totalTotalClients += data.totalClients;
             branchCount++;
             hasAnyData = true;
+            if (data.propertiesLostList) {
+              allPropertiesLost.push(`${branch}: ${data.propertiesLostList}`);
+            }
           }
         });
         
@@ -211,8 +218,8 @@ export const useClientRetention = () => {
           monthData.lostClients = totalLostClients;
           monthData.totalClients = totalTotalClients;
           monthData.hasData = true;
+          monthData.propertiesLostList = allPropertiesLost.join('\n');
         } else {
-          // Set to null to break the line, not 0
           monthData.retentionPercent = null;
           monthData.retentionDollars = null;
           monthData.lostClients = null;
@@ -226,6 +233,7 @@ export const useClientRetention = () => {
         let totalTotalClients = 0;
         let branchCount = 0;
         let hasAnyData = false;
+        let allPropertiesLost = [];
         
         selectedBranches.forEach(branch => {
           let data = null;
@@ -236,7 +244,6 @@ export const useClientRetention = () => {
             data = clientRetentionData[branch]?.[month];
           }
           
-          // More strict check - only consider it has data if there's actual retention dollars or total clients
           if (data && (data.retentionDollars > 0 || data.totalClients > 0)) {
             totalRetentionPercent += data.retentionPercent;
             totalRetentionDollars += data.retentionDollars;
@@ -244,6 +251,9 @@ export const useClientRetention = () => {
             totalTotalClients += data.totalClients;
             branchCount++;
             hasAnyData = true;
+            if (data.propertiesLostList) {
+              allPropertiesLost.push(`${branch}: ${data.propertiesLostList}`);
+            }
           }
         });
         
@@ -253,8 +263,8 @@ export const useClientRetention = () => {
           monthData.lostClients = totalLostClients;
           monthData.totalClients = totalTotalClients;
           monthData.hasData = true;
+          monthData.propertiesLostList = allPropertiesLost.join('\n');
         } else {
-          // Set to null to break the line, not 0
           monthData.retentionPercent = null;
           monthData.retentionDollars = null;
           monthData.lostClients = null;
@@ -263,15 +273,16 @@ export const useClientRetention = () => {
       }
       
       // Add individual branch data for tooltips
-      // Only add if branch has actual data (not default values)
       clientRetentionBranches.forEach(branch => {
         const data = clientRetentionData[branch]?.[month];
         if (data && (data.retentionDollars > 0 || data.totalClients > 0)) {
           monthData[`${branch}_percent`] = data.retentionPercent;
           monthData[`${branch}_dollars`] = data.retentionDollars;
+          monthData[`${branch}_propertiesLost`] = data.propertiesLostList || '';
         } else {
           monthData[`${branch}_percent`] = null;
           monthData[`${branch}_dollars`] = null;
+          monthData[`${branch}_propertiesLost`] = '';
         }
       });
       
@@ -280,9 +291,11 @@ export const useClientRetention = () => {
       if (companyData && (companyData.retentionDollars > 0 || companyData.totalClients > 0)) {
         monthData['Company_percent'] = companyData.retentionPercent;
         monthData['Company_dollars'] = companyData.retentionDollars;
+        monthData['Company_propertiesLost'] = companyData.propertiesLostList || '';
       } else {
         monthData['Company_percent'] = null;
         monthData['Company_dollars'] = null;
+        monthData['Company_propertiesLost'] = '';
       }
       
       metrics.push(monthData);
