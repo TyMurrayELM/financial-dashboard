@@ -4,7 +4,7 @@ import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { formatCurrency } from '../../utils/formatting';
 
-export const VehicleCostsChart = ({ data, rollingAverages = {} }) => {
+export const VehicleCostsChart = React.memo(({ data, rollingAverages = {} }) => {
   const showAnyRollingAverage = rollingAverages['3m'] || rollingAverages['6m'] || rollingAverages['12m'];
   
   return (
@@ -167,4 +167,4 @@ export const VehicleCostsChart = ({ data, rollingAverages = {} }) => {
       </LineChart>
     </ResponsiveContainer>
   );
-};
+});

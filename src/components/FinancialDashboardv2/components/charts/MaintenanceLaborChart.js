@@ -4,7 +4,7 @@ import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { formatPercent } from '../../utils/formatting';
 
-export const MaintenanceLaborChart = ({ data, rollingAverages = {} }) => {
+export const MaintenanceLaborChart = React.memo(({ data, rollingAverages = {} }) => {
   const showAnyRollingAverage = rollingAverages['3m'] || rollingAverages['6m'] || rollingAverages['12m'];
   
   return (
@@ -247,4 +247,4 @@ export const MaintenanceLaborChart = ({ data, rollingAverages = {} }) => {
       </LineChart>
     </ResponsiveContainer>
   );
-};
+});

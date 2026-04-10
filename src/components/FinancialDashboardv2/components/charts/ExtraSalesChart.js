@@ -4,7 +4,7 @@ import React from 'react';
 import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { formatPercent, formatCurrency } from '../../utils/formatting';
 
-export const ExtraSalesChart = ({ data, showMaintenanceRevenue = false, showDollarValues = false }) => {
+export const ExtraSalesChart = React.memo(({ data, showMaintenanceRevenue = false, showDollarValues = false }) => {
   // Custom formatter for abbreviated currency values
   const formatMillions = (value) => {
     if (value >= 1000000) {
@@ -259,4 +259,4 @@ export const ExtraSalesChart = ({ data, showMaintenanceRevenue = false, showDoll
       </ComposedChart>
     </ResponsiveContainer>
   );
-};
+});

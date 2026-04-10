@@ -1,6 +1,6 @@
 // src/components/FinancialDashboardv2/hooks/useClientRetention.js
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../../supabaseClient';
 import { allMonths, clientRetentionBranches } from '../constants';
 
@@ -36,7 +36,7 @@ export const useClientRetention = () => {
   });
   
   const [isSaving, setIsSaving] = useState(false);
-  const [saveTimer, setSaveTimer] = useState(null);
+  const saveTimerRef = useRef(null);
 
   // Load client retention data from Supabase
   const loadClientRetentionFromSupabase = async () => {
@@ -147,14 +147,12 @@ export const useClientRetention = () => {
       }
       
       // Clear existing timer
-      if (saveTimer) clearTimeout(saveTimer);
-      
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+
       // Set new timer to save after 1 second of inactivity
-      const timer = setTimeout(() => {
+      saveTimerRef.current = setTimeout(() => {
         saveClientRetentionToSupabase(branch, month, newData[branch][month]);
       }, 1000);
-      
-      setSaveTimer(timer);
       
       return newData;
     });
@@ -307,6 +305,13 @@ export const useClientRetention = () => {
   // Load data on mount
   useEffect(() => {
     loadClientRetentionFromSupabase();
+  }, []);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
   }, []);
 
   return {

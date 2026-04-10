@@ -14,7 +14,7 @@ const BRANCH_COLORS = {
   'Phx - N': '#10b981'     // Green
 };
 
-export const ClientRetentionChart = ({ data, showDollarValues = false, selectedBranches = [], onHoverMonth }) => {
+export const ClientRetentionChart = React.memo(({ data, showDollarValues = false, selectedBranches = [], onHoverMonth }) => {
   // Custom tooltip to show branch breakdown and properties lost
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -202,4 +202,4 @@ export const ClientRetentionChart = ({ data, showDollarValues = false, selectedB
       </LineChart>
     </ResponsiveContainer>
   );
-};
+});

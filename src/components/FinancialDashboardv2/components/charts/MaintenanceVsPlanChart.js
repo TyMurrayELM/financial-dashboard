@@ -4,7 +4,7 @@ import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { formatCurrency } from '../../utils/formatting';
 
-export const MaintenanceVsPlanChart = ({ data }) => {
+export const MaintenanceVsPlanChart = React.memo(({ data }) => {
   return (
     <ResponsiveContainer width="100%" height={300}>
       <LineChart data={data} margin={{ left: 10, right: 10 }}>
@@ -99,4 +99,4 @@ export const MaintenanceVsPlanChart = ({ data }) => {
       </LineChart>
     </ResponsiveContainer>
   );
-};
+});

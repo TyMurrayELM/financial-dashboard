@@ -4,7 +4,7 @@ import React from 'react';
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { formatCurrency } from '../../utils/formatting';
 
-export const LongTermDebtChart = ({ data }) => {
+export const LongTermDebtChart = React.memo(({ data }) => {
   return (
     <ResponsiveContainer width="100%" height={300}>
       <ComposedChart data={data}>
@@ -105,4 +105,4 @@ export const LongTermDebtChart = ({ data }) => {
       </ComposedChart>
     </ResponsiveContainer>
   );
-};
+});

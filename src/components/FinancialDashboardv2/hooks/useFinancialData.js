@@ -1,6 +1,6 @@
 // src/components/FinancialDashboardv2/hooks/useFinancialData.js
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../../supabaseClient';
 import { getInitialData } from '../utils/dataHelpers';
 import { defaultMonthData } from '../constants';
@@ -11,7 +11,7 @@ export const useFinancialData = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
-  const [saveTimer, setSaveTimer] = useState(null);
+  const saveTimerRef = useRef(null);
 
   // Check Supabase connection
   const checkConnection = async () => {
@@ -145,14 +145,12 @@ export const useFinancialData = () => {
         : parseFloat(value) || 0;
       
       // Clear existing timer
-      if (saveTimer) clearTimeout(saveTimer);
-      
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+
       // Set new timer to save after 1 second of inactivity
-      const timer = setTimeout(() => {
+      saveTimerRef.current = setTimeout(() => {
         saveToSupabase(region, dept, month, newData[region][dept][month]);
       }, 1000);
-      
-      setSaveTimer(timer);
       
       return newData;
     });
@@ -162,6 +160,13 @@ export const useFinancialData = () => {
   useEffect(() => {
     loadDataFromSupabase();
     checkConnection();
+  }, []);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
   }, []);
 
   return {

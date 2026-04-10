@@ -1,6 +1,6 @@
 // src/components/FinancialDashboardv2/hooks/useExpenseData.js
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../../supabaseClient';
 import { allMonths, defaultExpenseData } from '../constants';
 
@@ -15,7 +15,7 @@ export const useExpenseData = () => {
   });
   
   const [isSaving, setIsSaving] = useState(false);
-  const [saveTimer, setSaveTimer] = useState(null);
+  const saveTimerRef = useRef(null);
 
   // Load expense data from Supabase
   const loadExpenseDataFromSupabase = async () => {
@@ -122,14 +122,12 @@ export const useExpenseData = () => {
       newData[month][field] = parseFloat(value) || 0;
       
       // Clear existing timer
-      if (saveTimer) clearTimeout(saveTimer);
-      
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+
       // Set new timer to save after 1 second of inactivity
-      const timer = setTimeout(() => {
+      saveTimerRef.current = setTimeout(() => {
         saveExpenseDataToSupabase(month, newData[month]);
       }, 1000);
-      
-      setSaveTimer(timer);
       
       return newData;
     });
@@ -153,6 +151,13 @@ export const useExpenseData = () => {
   // Load data on mount
   useEffect(() => {
     loadExpenseDataFromSupabase();
+  }, []);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
   }, []);
 
   return {

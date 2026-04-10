@@ -85,7 +85,7 @@ const IndirectCostsTooltip = ({ active, payload, label, data, selectedRegion, se
   return null;
 };
 
-export const IndirectCostsChart = ({ data, selectedRegion, selectedDepartment, rollingAverages = {} }) => {
+export const IndirectCostsChart = React.memo(({ data, selectedRegion, selectedDepartment, rollingAverages = {} }) => {
   const showAnyRollingAverage = rollingAverages['3m'] || rollingAverages['6m'] || rollingAverages['12m'];
   
   return (
@@ -208,4 +208,4 @@ export const IndirectCostsChart = ({ data, selectedRegion, selectedDepartment, r
       </LineChart>
     </ResponsiveContainer>
   );
-};
+});

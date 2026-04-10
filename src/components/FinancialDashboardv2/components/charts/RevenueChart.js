@@ -4,7 +4,7 @@ import React from 'react';
 import { Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Area, ComposedChart } from 'recharts';
 import { formatCurrency, formatPercent } from '../../utils/formatting';
 
-export const RevenueChart = ({ data, rollingAverages = {}, showDollarValues = false }) => {
+export const RevenueChart = React.memo(({ data, rollingAverages = {}, showDollarValues = false }) => {
   const showAnyRollingAverage = rollingAverages['3m'] || rollingAverages['6m'] || rollingAverages['12m'];
   
   // Determine which data keys to use based on the toggle
@@ -406,4 +406,4 @@ export const RevenueChart = ({ data, rollingAverages = {}, showDollarValues = fa
       </ComposedChart>
     </ResponsiveContainer>
   );
-};
+});

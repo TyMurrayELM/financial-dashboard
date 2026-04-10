@@ -1,51 +1,66 @@
 // src/components/FinancialDashboardv2/components/SummaryCards.js
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { DollarSign, TrendingUp, Target, Users, ChevronDown, ChevronRight } from 'lucide-react';
 import { formatCurrency, formatPercent } from '../utils/formatting';
 import { regions, departments, allMonths } from '../constants';
 
-export const SummaryCards = ({ metrics, selectedRegion, selectedDepartment, data, startMonth, endMonth }) => {
+export const SummaryCards = React.memo(({ metrics, selectedRegion, selectedDepartment, data, startMonth, endMonth }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  
-  const totalRevenue = metrics.reduce((sum, m) => sum + m.revenue, 0);
-  const totalNetIncome = metrics.reduce((sum, m) => sum + m.netIncome, 0);
-  const avgGrossMargin = metrics.reduce((sum, m) => sum + m.grossMargin, 0) / 
-    metrics.filter(m => m.grossMargin > 0).length || 0;
-  const avgRevPerEmployee = metrics.reduce((sum, m) => sum + m.revenuePerEmployee, 0) / 
-    metrics.filter(m => m.revenuePerEmployee > 0).length || 0;
 
-  const calculateRegionRevenue = (region) => {
-    return metrics.reduce((sum, metric) => {
-      let monthRevenue = 0;
-      allMonths.filter(m => m >= startMonth && m <= endMonth).forEach(month => {
-        if (month === metric.month) {
-          departments.forEach(dept => {
-            if (data && data[region] && data[region][dept] && data[region][dept][month]) {
-              monthRevenue += data[region][dept][month].revenue || 0;
-            }
-          });
-        }
-      });
-      return sum + monthRevenue;
-    }, 0);
-  };
+  const { totalRevenue, totalNetIncome, totalCogs, avgGrossMargin, avgRevPerEmployee, totalEmployees } = useMemo(() => {
+    const totalRevenue = metrics.reduce((sum, m) => sum + m.revenue, 0);
+    const totalNetIncome = metrics.reduce((sum, m) => sum + m.netIncome, 0);
+    const totalCogs = metrics.reduce((sum, m) => sum + m.cogs, 0);
+    const grossMarginEntries = metrics.filter(m => m.grossMargin > 0);
+    const avgGrossMargin = grossMarginEntries.length > 0
+      ? metrics.reduce((sum, m) => sum + m.grossMargin, 0) / grossMarginEntries.length
+      : 0;
+    const revPerEmpEntries = metrics.filter(m => m.revenuePerEmployee > 0);
+    const avgRevPerEmployee = revPerEmpEntries.length > 0
+      ? metrics.reduce((sum, m) => sum + m.revenuePerEmployee, 0) / revPerEmpEntries.length
+      : 0;
+    let totalEmployees = 0;
+    metrics.forEach(m => {
+      const monthTotal = m.revenue > 0 ? m.revenue / (m.revenuePerEmployee || 1) : 0;
+      if (monthTotal > 0) totalEmployees += monthTotal;
+    });
+    return { totalRevenue, totalNetIncome, totalCogs, avgGrossMargin, avgRevPerEmployee, totalEmployees: Math.round(totalEmployees) };
+  }, [metrics]);
 
-  const calculateDeptRevenue = (dept) => {
-    return metrics.reduce((sum, metric) => {
-      let monthRevenue = 0;
-      allMonths.filter(m => m >= startMonth && m <= endMonth).forEach(month => {
-        if (month === metric.month) {
-          regions.forEach(region => {
-            if (data && data[region] && data[region][dept] && data[region][dept][month]) {
-              monthRevenue += data[region][dept][month].revenue || 0;
-            }
-          });
-        }
+  const filteredMonths = useMemo(() => allMonths.filter(m => m >= startMonth && m <= endMonth), [startMonth, endMonth]);
+
+  const regionRevenues = useMemo(() => {
+    const result = {};
+    regions.forEach(region => {
+      let total = 0;
+      filteredMonths.forEach(month => {
+        departments.forEach(dept => {
+          if (data?.[region]?.[dept]?.[month]) {
+            total += data[region][dept][month].revenue || 0;
+          }
+        });
       });
-      return sum + monthRevenue;
-    }, 0);
-  };
+      result[region] = total;
+    });
+    return result;
+  }, [data, filteredMonths]);
+
+  const deptRevenues = useMemo(() => {
+    const result = {};
+    departments.forEach(dept => {
+      let total = 0;
+      filteredMonths.forEach(month => {
+        regions.forEach(region => {
+          if (data?.[region]?.[dept]?.[month]) {
+            total += data[region][dept][month].revenue || 0;
+          }
+        });
+      });
+      result[dept] = total;
+    });
+    return result;
+  }, [data, filteredMonths]);
 
   return (
     <div>
@@ -82,19 +97,18 @@ export const SummaryCards = ({ metrics, selectedRegion, selectedDepartment, data
                   {regions.map(region => (
                     <div key={region} className="flex justify-between ml-2 text-[10px]">
                       <span className="text-gray-600">{region}:</span>
-                      <span className="font-medium">{formatCurrency(calculateRegionRevenue(region))}</span>
+                      <span className="font-medium">{formatCurrency(regionRevenues[region])}</span>
                     </div>
                   ))}
                 </div>
                 <div>
                   <div className="text-[10px] uppercase tracking-wide font-bold mb-0.5 mt-1">By Department:</div>
                   {departments.map(dept => {
-                    const deptRevenue = calculateDeptRevenue(dept);
-                    if (deptRevenue > 0) {
+                    if (deptRevenues[dept] > 0) {
                       return (
                         <div key={dept} className="flex justify-between ml-2 text-[10px]">
                           <span className="text-gray-600">{dept}:</span>
-                          <span className="font-medium">{formatCurrency(deptRevenue)}</span>
+                          <span className="font-medium">{formatCurrency(deptRevenues[dept])}</span>
                         </div>
                       );
                     }
@@ -118,7 +132,7 @@ export const SummaryCards = ({ metrics, selectedRegion, selectedDepartment, data
                 (Revenue - COGS) / Revenue
               </p>
               <p className="text-[10px] text-gray-600 mt-1 whitespace-nowrap overflow-hidden text-ellipsis">
-                ({formatCurrency(totalRevenue)} - {formatCurrency(metrics.reduce((sum, m) => sum + m.cogs, 0))}) / {formatCurrency(totalRevenue)}
+                ({formatCurrency(totalRevenue)} - {formatCurrency(totalCogs)}) / {formatCurrency(totalRevenue)}
               </p>
             </div>
           </div>
@@ -153,16 +167,7 @@ export const SummaryCards = ({ metrics, selectedRegion, selectedDepartment, data
                 Revenue / Total Employees
               </p>
               <p className="text-[10px] text-gray-600 mt-1 whitespace-nowrap overflow-hidden text-ellipsis">
-                {formatCurrency(totalRevenue)} / {
-                  (() => {
-                    let totalEmp = 0;
-                    metrics.forEach(m => {
-                      const monthTotal = m.revenue > 0 ? m.revenue / (m.revenuePerEmployee || 1) : 0;
-                      if (monthTotal > 0) totalEmp += monthTotal;
-                    });
-                    return Math.round(totalEmp);
-                  })()
-                } employees
+                {formatCurrency(totalRevenue)} / {totalEmployees} employees
               </p>
             </div>
           </div>
@@ -170,4 +175,4 @@ export const SummaryCards = ({ metrics, selectedRegion, selectedDepartment, data
       )}
     </div>
   );
-};
+});

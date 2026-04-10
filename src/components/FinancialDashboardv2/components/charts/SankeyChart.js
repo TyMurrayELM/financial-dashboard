@@ -5,13 +5,13 @@ import Plot from 'react-plotly.js';
 import { formatCurrency } from '../../utils/formatting';
 import { expenseCategoryFields } from '../../constants';
 
-export const SankeyChart = ({ 
-  revenueData, 
-  expenseData, 
-  startMonth, 
+export const SankeyChart = React.memo(({
+  revenueData,
+  expenseData,
+  startMonth,
   endMonth,
   selectedRegion,
-  selectedDepartment 
+  selectedDepartment
 }) => {
   const sankeyData = useMemo(() => {
     if (!revenueData || !expenseData) return null;
@@ -435,4 +435,4 @@ export const SankeyChart = ({
       </div>
     </div>
   );
-};
+});

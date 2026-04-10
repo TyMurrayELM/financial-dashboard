@@ -4,7 +4,7 @@ import React from 'react';
 import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { formatCurrency } from '../../utils/formatting';
 
-export const BalanceSheetChart = ({ data }) => {
+export const BalanceSheetChart = React.memo(({ data }) => {
   return (
     <ResponsiveContainer width="100%" height={300}>
       <ComposedChart data={data} margin={{ left: 10, right: 10 }}>
@@ -92,4 +92,4 @@ export const BalanceSheetChart = ({ data }) => {
       </ComposedChart>
     </ResponsiveContainer>
   );
-};
+});

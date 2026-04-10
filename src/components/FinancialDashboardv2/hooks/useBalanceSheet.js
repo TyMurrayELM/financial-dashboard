@@ -1,12 +1,12 @@
 // src/components/FinancialDashboard/hooks/useBalanceSheet.js
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../../supabaseClient';
 import { initializeBalanceSheetData } from '../utils/dataHelpers';
 
 export const useBalanceSheet = () => {
   const [balanceSheetData, setBalanceSheetData] = useState(() => initializeBalanceSheetData());
-  const [balanceSheetSaveTimer, setBalanceSheetSaveTimer] = useState(null);
+  const saveTimerRef = useRef(null);
   const [isSaving, setIsSaving] = useState(false);
 
   // Load balance sheet data from Supabase
@@ -108,49 +108,39 @@ export const useBalanceSheet = () => {
   }, []);
 
   // Update balance sheet data
-  const updateBalanceSheetData = (month, field, value) => {
+  const updateBalanceSheetData = useCallback((month, field, value) => {
     setBalanceSheetData(prev => {
-      const newData = JSON.parse(JSON.stringify(prev)); // Deep copy
-      if (!newData[month]) {
-        newData[month] = {
-          checking: 0,
-          moneyMarket: 0,
-          stTreasuries: 0,
-          payroll: 0,
-          accountsReceivable: 0,
-          otherCurrentAssets: 0,
-          fixedAssets: 0,
-          otherAssets: 0,
-          accountsPayable: 0,
-          creditCards: 0,
-          otherCurrentLiabilities: 0,
-          fordVehicles: 0,
-          midfirstLoans: 0,
-          sbaEidlLoan: 0,
-          equity: 0,
-          monthlyOperatingExpenses: 1600000
-        };
-      }
-      
-      newData[month][field] = parseFloat(value) || 0;
-      
+      const monthData = prev[month] || {
+        checking: 0, moneyMarket: 0, stTreasuries: 0, payroll: 0,
+        accountsReceivable: 0, otherCurrentAssets: 0, fixedAssets: 0,
+        otherAssets: 0, accountsPayable: 0, creditCards: 0,
+        otherCurrentLiabilities: 0, fordVehicles: 0, midfirstLoans: 0,
+        sbaEidlLoan: 0, equity: 0, monthlyOperatingExpenses: 1600000
+      };
+      const updatedMonth = { ...monthData, [field]: parseFloat(value) || 0 };
+
       // Clear existing timer
-      if (balanceSheetSaveTimer) clearTimeout(balanceSheetSaveTimer);
-      
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+
       // Set new timer to save after 1 second of inactivity
-      const timer = setTimeout(() => {
-        saveBalanceSheetToSupabase(month, newData[month]);
+      saveTimerRef.current = setTimeout(() => {
+        saveBalanceSheetToSupabase(month, updatedMonth);
       }, 1000);
-      
-      setBalanceSheetSaveTimer(timer);
-      
-      return newData;
+
+      return { ...prev, [month]: updatedMonth };
     });
-  };
+  }, [saveBalanceSheetToSupabase]);
 
   // Load data on mount
   useEffect(() => {
     loadBalanceSheetFromSupabase();
+  }, []);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
   }, []);
 
   return {
